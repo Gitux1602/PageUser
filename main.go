@@ -1,11 +1,14 @@
 package main
 
 import (
-	"Gambit/Users/PageUser/awsgo"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+
+	"Gambit/Users/PageUser/awsgo"
+	"Gambit/Users/PageUser/bd"
+	"Gambit/Users/PageUser/models"
 
 	"github.com/aws/aws-lambda-go/events"
 	lambda "github.com/aws/aws-lambda-go/lambda"
@@ -23,6 +26,30 @@ func EjecutoLambda(ctx context.Context, event events.CognitoEventUserPoolsPostCo
 		err := errors.New("error en los parametros, debe debe enviar Secret Name")
 		return event, err
 	}
+
+	var datos models.SignUp
+
+	for row, att := range event.Request.UserAttributes {
+
+		switch row {
+
+		case "email":
+			datos.UserEmail = att //En att viene el Email del usuario
+			fmt.Println("Email: " + datos.UserEmail)
+		case "sub":
+			datos.UserUUID = att
+			fmt.Println("Sub: " + datos.UserUUID)
+		}
+	}
+
+	err := bd.ReadSecret()
+	if err != nil {
+		fmt.Println("Error al leer el Secret" + err.Error())
+		return event, err
+	}
+
+	err = bd.SignUp(datos)
+	return event, err
 }
 
 func ValidoParametros() bool {
